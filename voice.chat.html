@@ -1,0 +1,268 @@
+
+<h2 class="sr-only">声掲示板 — 通話ルームを立てて知らない人と話せる掲示板サービスのデモです。</h2>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);font-size:15px;color:var(--color-text-primary)}
+#app{padding:1.5rem 0}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}
+.logo{font-size:18px;font-weight:500}
+.logo span{color:var(--color-text-secondary);font-weight:400;font-size:14px;margin-left:6px}
+.tabs{display:flex;gap:4px;margin-bottom:1rem}
+.tab{padding:6px 14px;border-radius:var(--border-radius-md);font-size:13px;cursor:pointer;border:0.5px solid var(--color-border-tertiary);background:transparent;color:var(--color-text-secondary)}
+.tab.active{background:var(--color-background-secondary);color:var(--color-text-primary);border-color:var(--color-border-secondary)}
+.new-room-form{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:1.25rem}
+.new-room-form .row{display:flex;gap:8px;align-items:center;margin-top:10px}
+.new-room-form input[type=text]{flex:1;padding:8px 10px;font-size:14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-secondary);color:var(--color-text-primary)}
+.tag-sel{padding:8px 10px;font-size:13px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-secondary);color:var(--color-text-primary)}
+.post-btn{padding:8px 16px;font-size:13px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);cursor:pointer;white-space:nowrap}
+.post-btn:hover{background:var(--color-background-secondary)}
+.room-list{display:flex;flex-direction:column;gap:10px}
+.room-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .15s}
+.room-card:hover{border-color:var(--color-border-secondary)}
+.room-card.live{border-color:#1D9E75;border-width:1px}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--color-background-info);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;color:var(--color-text-info);flex-shrink:0}
+.room-info{flex:1;min-width:0}
+.room-title{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.room-meta{font-size:12px;color:var(--color-text-secondary);margin-top:2px;display:flex;gap:8px;align-items:center}
+.badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+.badge.live{background:#E1F5EE;color:#0F6E56}
+.badge.waiting{background:#E6F1FB;color:#185FA5}
+.badge.topic{background:var(--color-background-secondary);color:var(--color-text-secondary)}
+.join-btn{padding:6px 14px;font-size:13px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-primary);cursor:pointer;flex-shrink:0}
+.join-btn:hover{background:var(--color-background-secondary)}
+.join-btn.primary{background:#1D9E75;color:#fff;border-color:#1D9E75}
+.join-btn.primary:hover{background:#0F6E56}
+
+.call-modal-wrap{min-height:360px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.35);border-radius:var(--border-radius-lg);margin-top:1rem}
+.call-modal{background:var(--color-background-primary);border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary);padding:1.5rem;width:360px;text-align:center}
+.call-avatars{display:flex;justify-content:center;gap:24px;margin:1rem 0}
+.call-av{display:flex;flex-direction:column;align-items:center;gap:6px}
+.call-av .av-circle{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:500}
+.call-av .av-name{font-size:12px;color:var(--color-text-secondary)}
+.waveform{display:flex;align-items:center;justify-content:center;gap:3px;height:32px;margin:10px 0}
+.waveform .bar{width:4px;border-radius:2px;background:#1D9E75;animation:wave 0.8s ease-in-out infinite}
+.waveform .bar:nth-child(2){animation-delay:.1s}
+.waveform .bar:nth-child(3){animation-delay:.2s}
+.waveform .bar:nth-child(4){animation-delay:.3s}
+.waveform .bar:nth-child(5){animation-delay:.15s}
+@keyframes wave{0%,100%{height:6px}50%{height:24px}}
+.waveform.silent .bar{height:4px;animation:none}
+.call-status{font-size:13px;color:var(--color-text-secondary);margin-bottom:1rem}
+.call-btns{display:flex;justify-content:center;gap:10px;margin-top:1rem}
+.cb{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;border:none}
+.cb.mute{background:var(--color-background-secondary);color:var(--color-text-primary)}
+.cb.mute:hover{background:var(--color-background-tertiary)}
+.cb.hangup{background:#E24B4A;color:#fff}
+.cb.hangup:hover{background:#A32D2D}
+.timer{font-size:22px;font-weight:500;letter-spacing:.05em;margin-bottom:4px}
+</style>
+
+<div id="app">
+  <div class="topbar">
+    <div class="logo">声掲示板 <span>— 知らない人と話そう</span></div>
+    <button class="post-btn" onclick="toggleForm()"><i class="ti ti-plus" aria-hidden="true"></i> ルームを立てる</button>
+  </div>
+
+  <div id="new-form" style="display:none">
+    <div class="new-room-form">
+      <div style="font-size:14px;font-weight:500;margin-bottom:4px">新しい通話ルームを作成</div>
+      <div style="font-size:13px;color:var(--color-text-secondary)">タイトルとトピックを設定して、話せる人を募集しよう</div>
+      <div class="row">
+        <input type="text" id="room-title-input" placeholder="例：今日の出来事を話したい、雑談しよう..." />
+        <select class="tag-sel" id="topic-sel">
+          <option>雑談</option><option>ゲーム</option><option>音楽</option><option>悩み相談</option><option>勉強</option><option>映画・アニメ</option>
+        </select>
+        <button class="post-btn" onclick="addRoom()">投稿</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="filterRooms('all',this)">すべて</button>
+    <button class="tab" onclick="filterRooms('live',this)">通話中</button>
+    <button class="tab" onclick="filterRooms('waiting',this)">募集中</button>
+  </div>
+
+  <div class="room-list" id="room-list"></div>
+  <div id="call-area"></div>
+</div>
+
+<script>
+let rooms=[
+  {id:1,title:'ゲームの話しよう（今のマイブームとか）',topic:'ゲーム',status:'live',users:2,host:'ゆき',hostColor:'#E6F1FB',hostText:'#185FA5'},
+  {id:2,title:'誰でもいいから雑談したい',topic:'雑談',status:'waiting',users:0,host:'たろう',hostColor:'#EEEDFE',hostText:'#534AB7'},
+  {id:3,title:'最近観た映画の感想聞かせて',topic:'映画・アニメ',status:'waiting',users:0,host:'みく',hostColor:'#FBEAF0',hostText:'#993556'},
+  {id:4,title:'深夜の一人語り、聞いてくれる人',topic:'悩み相談',status:'live',users:1,host:'そら',hostColor:'#E1F5EE',hostText:'#0F6E56'},
+  {id:5,title:'音楽の趣味が合う人と話したい',topic:'音楽',status:'waiting',users:0,host:'ren',hostColor:'#FAEEDA',hostText:'#854F0B'},
+];
+let filterMode='all';
+let callState=null;
+let timerInterval=null;
+let timerSec=0;
+let micStream=null;
+let analyser=null;
+let animFrame=null;
+
+function toggleForm(){
+  let f=document.getElementById('new-form');
+  f.style.display=f.style.display==='none'?'block':'none';
+}
+
+function addRoom(){
+  let t=document.getElementById('room-title-input').value.trim();
+  let topic=document.getElementById('topic-sel').value;
+  if(!t)return;
+  let colors=[
+    {bg:'#E6F1FB',txt:'#185FA5'},{bg:'#EEEDFE',txt:'#534AB7'},
+    {bg:'#E1F5EE',txt:'#0F6E56'},{bg:'#FBEAF0',txt:'#993556'},
+    {bg:'#FAEEDA',txt:'#854F0B'}
+  ];
+  let c=colors[Math.floor(Math.random()*colors.length)];
+  rooms.unshift({id:Date.now(),title:t,topic,status:'waiting',users:0,host:'あなた',hostColor:c.bg,hostText:c.txt});
+  document.getElementById('room-title-input').value='';
+  document.getElementById('new-form').style.display='none';
+  renderRooms();
+}
+
+function filterRooms(mode,btn){
+  filterMode=mode;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  renderRooms();
+}
+
+function initials(name){return name.slice(0,2)}
+
+function renderRooms(){
+  let list=document.getElementById('room-list');
+  let filtered=filterMode==='all'?rooms:rooms.filter(r=>r.status===filterMode);
+  list.innerHTML=filtered.map(r=>`
+    <div class="room-card ${r.status==='live'?'live':''}" onclick="joinRoom(${r.id})">
+      <div class="avatar" style="background:${r.hostColor};color:${r.hostText}">${initials(r.host)}</div>
+      <div class="room-info">
+        <div class="room-title">${r.title}</div>
+        <div class="room-meta">
+          <span class="badge ${r.status==='live'?'live':'waiting'}">${r.status==='live'?'通話中':'募集中'}</span>
+          <span class="badge topic">${r.topic}</span>
+          ${r.status==='live'?`<span>${r.users}人が参加中</span>`:'<span>参加者を待っています</span>'}
+        </div>
+      </div>
+      <button class="join-btn ${r.status==='live'?'primary':''}" onclick="event.stopPropagation();joinRoom(${r.id})">
+        ${r.status==='live'?'参加':'待機'}
+      </button>
+    </div>
+  `).join('');
+}
+
+function joinRoom(id){
+  if(callState)return;
+  let room=rooms.find(r=>r.id===id);
+  if(!room)return;
+  callState={roomId:id,muted:false,speaking:false};
+  timerSec=0;
+  document.getElementById('call-area').innerHTML=renderCallModal(room);
+  startMic();
+  timerInterval=setInterval(()=>{
+    timerSec++;
+    let el=document.getElementById('call-timer');
+    if(el){let m=Math.floor(timerSec/60),s=timerSec%60;el.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;}
+  },1000);
+  room.status='live';
+  room.users=(room.users||0)+1;
+  renderRooms();
+}
+
+function renderCallModal(room){
+  return `
+  <div class="call-modal-wrap">
+    <div class="call-modal">
+      <div style="font-size:14px;font-weight:500;margin-bottom:4px">${room.title}</div>
+      <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:12px">${room.topic}</div>
+      <div class="call-avatars">
+        <div class="call-av">
+          <div class="av-circle" style="background:${room.hostColor};color:${room.hostText}">${initials(room.host)}</div>
+          <div class="av-name">${room.host}</div>
+        </div>
+        <div style="display:flex;align-items:center;color:var(--color-text-tertiary);font-size:20px">—</div>
+        <div class="call-av">
+          <div class="av-circle" style="background:#E1F5EE;color:#0F6E56">あ</div>
+          <div class="av-name">あなた</div>
+        </div>
+      </div>
+      <div class="waveform" id="waveform">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      </div>
+      <div class="timer" id="call-timer">00:00</div>
+      <div class="call-status" id="call-status">接続中...</div>
+      <div class="call-btns">
+        <button class="cb mute" id="mute-btn" onclick="toggleMute()" aria-label="ミュート切替"><i class="ti ti-microphone"></i></button>
+        <button class="cb hangup" onclick="hangup()" aria-label="切断"><i class="ti ti-phone-off"></i></button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function startMic(){
+  if(!navigator.mediaDevices){setStatus('マイクが使えません（HTTPSが必要）');return;}
+  navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+    micStream=stream;
+    setStatus('通話中');
+    let ctx=new AudioContext();
+    let src=ctx.createMediaStreamSource(stream);
+    analyser=ctx.createAnalyser();
+    analyser.fftSize=32;
+    src.connect(analyser);
+    animateWave();
+  }).catch(()=>{
+    setStatus('マイクへのアクセスが拒否されました');
+  });
+}
+
+function animateWave(){
+  if(!analyser)return;
+  let data=new Uint8Array(analyser.frequencyBinCount);
+  function draw(){
+    animFrame=requestAnimationFrame(draw);
+    analyser.getByteFrequencyData(data);
+    let bars=document.querySelectorAll('.waveform .bar');
+    bars.forEach((b,i)=>{
+      let h=Math.max(4,Math.min(28,(data[i]||0)/8));
+      b.style.height=h+'px';
+    });
+  }
+  draw();
+}
+
+function toggleMute(){
+  if(!callState)return;
+  callState.muted=!callState.muted;
+  if(micStream)micStream.getAudioTracks().forEach(t=>t.enabled=!callState.muted);
+  let btn=document.getElementById('mute-btn');
+  if(btn){
+    btn.innerHTML=callState.muted?'<i class="ti ti-microphone-off"></i>':'<i class="ti ti-microphone"></i>';
+    btn.style.background=callState.muted?'#F7C1C1':'';
+    btn.style.color=callState.muted?'#A32D2D':'';
+  }
+  let wv=document.getElementById('waveform');
+  if(wv)wv.classList.toggle('silent',callState.muted);
+}
+
+function hangup(){
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+  if(animFrame){cancelAnimationFrame(animFrame);animFrame=null;}
+  if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;}
+  analyser=null;
+  let room=rooms.find(r=>r.id===callState?.roomId);
+  if(room){room.users=Math.max(0,room.users-1);if(room.users===0)room.status='waiting';}
+  callState=null;
+  document.getElementById('call-area').innerHTML='';
+  renderRooms();
+}
+
+function setStatus(txt){
+  let el=document.getElementById('call-status');
+  if(el)el.textContent=txt;
+}
+
+renderRooms();
+</script>
